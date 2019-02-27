@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>软件定制--订单</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/dropzone.min.css">
+    <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+    <script src="http://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+    <script src="http://code.jquery.com/jquery-latest.js"></script>
+    <script src="/static/js/dropzone.min.js"></script>
+</head>
+<body>
+
+
+<nav class="navbar navbar-default">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="{% url 'user:index' %}" id="my_order">主页</a>
+        </div>
+
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+
+            <ul class="nav navbar-nav navbar-right">
+                {% if user %}
+                    <li><a href="#">{{ user.username }}&nbsp;&nbsp;&nbsp;&nbsp;|</a></li>
+                    <li><a href="{% url 'user:logout' %}">注销</a></li>
+                {% endif %}
+
+            </ul>
+        </div>
+    </div>
+</nav>
+
+
+
+<div class="container">
+
+    <div class="panel panel-primary">
+
+        <div class="panel-heading">
+            <h3 class="panel-title">订单列表</h3>
+        </div>
+
+
+        <div class="panel-body">
+
+
+            <table class="table table-hover" style="margin-top:2px;">
+                <thead>
+                <tr>
+                    {#                    <th>订单编号</th>#}
+                    <th>订单状态</th>
+                    <th>软件名称</th>
+                    <th>软件描述</th>
+                    <th>软件类别</th>
+                    <th>处理</th>
+                </tr>
+                </thead>
+                <tbody id="tbody">
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+
+    <div style="margin:0px;text-align:center;margin-top:0px;">
+        <ul id="page" class="pagination" style="height:100px;">
+            <li class="disabled"><a href="#">«</a></li>
+            <li class="active"><a href="#">1</a></li>
+            <li class="disabled"><a href="#">»</a></li>
+
+        </ul>
+
+    </div>
+
+
+</div>
+
+
+<div class="modal fade" id="addUserModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+                    ×
+                </button>
+                <h4 class="modal-title" id="myModalLabel">
+                    订单信息
+                </h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal" role="form">
+                    <div class="form-group">
+                        <label for="order_id" class="col-sm-3 control-label">订单编号</label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control" id="order_id" name="order_id" disabled>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="soft_name" class="col-sm-3 control-label">软件名称</label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control" name="soft_name" id="soft_name">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="soft_category" class="col-sm-3 control-label">软件类别</label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control" name="soft_category" id="soft_category" disabled>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="soft_desc" class="col-sm-3 control-label">软件描述</label>
+                        <div class="col-sm-9">
+                                <textarea class="form-control" name="soft_desc" id="soft_desc">
+
+                                </textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭
+                </button>
+                <button type="submit" class="btn btn-primary" id="submit">
+                    提交
+                </button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal -->
+</div>
+
+
+<script>
+    var getting = {
+        url: "{% url 'user:my_order' %}",
+        data: null,
+        type: "post",
+        dataType: "json",
+        success: function (data) {
+            $("#tbody").empty();
+            for (key in data) {
+                order = data[key];
+                if (order.status == 0)
+                    value = "等待接单...";
+                else if (order.status == 1)
+                    value = "已接单,等待完成...";
+                else
+                    value = "已完成";
+                item1 = "<td>" + value + "</td>";
+                item2 = "<td>" + order.soft_name + "</td>";
+                item3 = "<td>" + order.desc + "</td>";
+                item4 = "<td>" + order.desc + "</td>";
+                item4 = "<td>" + order.category + "</td>";
+                item5 = "<td>" + "<a href='#' data-toggle='modal'  data-target='#addUserModal' onclick='get_edit_info(" + order.id + ")'>编辑</a>";
+                item5 += "&nbsp;&nbsp;" + "<a href='#' onclick='delete_order(" + order.id + ")'>删除</a>" + "</td>";
+                content = "<tr>" + item1 + item2 + item3 + item4 + item5 + "</tr>";
+                $("#tbody").append(content);
+            }
+        }
+    };
+    window.setInterval(function () {
+        $.ajax(getting)
+    }, 1000);
+
+    function delete_order(id) {
+        if (!id) {
+            alert('Error！');
+            return false;
+        }
+        $.ajax({
+            url: "{% url 'user:delete_order' %}",
+            data: {"order_id": id},
+            type: "post",
+            dataType: 'html',
+            success: function (data) {
+                alert("删除成功")
+            },
+
+        })
+    };
+
+    function get_edit_info(id) {
+        if (!id) {
+            alert("处理错误");
+            return false;
+        }
+        $.ajax({
+            url: "{% url 'user:edit_order_info' %}",
+            data: {order_id: id},
+            method: "post",
+            dataType: "json",
+            success: function (data) {
+                $("#order_id").val(data.id);
+                $("#soft_name").val(data.soft_name);
+                $("#soft_desc").val(data.desc);
+                $("#soft_category").val(data.category);
+
+                $.ajax({
+                    url: '{% url "user:get_categories" %}',
+                    data: null,
+                    type: 'post',
+                    dataType: 'json',
+                    success: function (data) {
+                        document.getElementById("select").options.length = 0;
+                        for (index in data) {
+                            {#动态添加select选项#}
+                            $("#select").append("<option value=" + data[index].id + ">" + data[index].name + "</option>")
+                        }
+
+                    }
+                });
+
+            }
+        });
+    }
+
+
+    $("#submit").click(function () {
+        var order_id = $("#order_id").val();
+        var soft_name = $("#soft_name").val();
+        var soft_desc = $("#soft_desc").val();
+        $.ajax({
+            url: "{% url 'user:edit_order' %}",
+            data: {order_id: order_id, soft_name: soft_name, soft_desc: soft_desc},
+            method: "post",
+            dataType: "html",
+            success: function (data) {
+                {#$("#tip").html("<span style='color:blueviolet'>" +"修改"+ "成功！</span>");#}
+                alert("修改成功")
+            }
+        });
+        location.reload()
+    });
+
+
+</script>
+
+
+</body>
+</html>
